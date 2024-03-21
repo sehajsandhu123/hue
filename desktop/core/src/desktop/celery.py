@@ -37,9 +37,26 @@ class MyCelery(Celery):
             module = module[:-6]
         return super().gen_task_name(name, module)
 
+    # Method to configure the beat_schedule
+    def setup_beat_schedule(self):
+        from django.utils import timezone
+        now = timezone.now()
+
+        self.conf.beat_schedule = {
+            'check_disk_usage_and_clean_task': {
+                'task': 'filebrowser.check_disk_usage_and_clean_task',
+                'schedule': 1000.0,  # Run every 1000 seconds
+                'args': (),
+                'kwargs': {'cleanup_threshold': 90},  # Provide task arguments if needed
+            },
+        }
+
 app = MyCelery('desktop', backend=CELERY_RESULT_BACKEND, broker=CELERY_BROKER_URL)
 app.conf.broker_transport_options = {'visibility_timeout': 3600}  # 1 hour.
 app.conf.result_key_prefix = 'desktop_'
+
+# Call the setup_beat_schedule method
+app.setup_beat_schedule()
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
