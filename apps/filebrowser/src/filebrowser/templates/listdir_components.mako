@@ -1109,6 +1109,10 @@ else:
         return self.currentPath().toLowerCase().indexOf('ofs://') === 0;
       });
 
+      self.isTaskServerEnabled = ko.computed(function() {
+        return window.getLastKnownConfig().hue_config.enable_chunked_file_uploader && window.getLastKnownConfig().hue_config.enable_task_server;
+      });
+
       self.scheme = ko.pureComputed(function () {
         var path = self.currentPath();
         return path.substring(0, path.indexOf(':/')) || "hdfs";
@@ -2045,49 +2049,59 @@ else:
         });
       };
 
-      function pollForRealProgress(taskIds, listItems, pendingUploads) {
+      function pollForTaskProgress(taskIds, listItems, pendingUploads) {
         var completedUploads = 0; // Track the number of completed uploads
-        taskIds.forEach(function(task_id, index) {
-          var listItem = listItems[index];
-          var retryCount = 0;
-          var maxRetries = 5;
-                
-          var interval = setInterval(function() {
-            $.get('/desktop/api2/check_upload_status/' + task_id, function(data) {
-              if (data.isFinalized || data.isFailure || data.is_revoked) {
-                clearInterval(interval);
-                completedUploads++; // Increment the count of completed uploads
-
-                if (data.isFinalized) {
-                  listItem.find('.progress-row-bar').css('width', '100%');
-                  listItem.find('.progress-row-text').text('Upload complete.');
-                } else if (data.isFailure) {
-                  listItem.find('.progress-row-bar').css('width', '100%');
-                  listItem.find('.progress-row-text').text('Upload failed.');
-                }
-
-                if (completedUploads >= taskIds.length) {
-                  $('#uploadFileModal').modal('hide'); // Close the modal when all uploads are completed
-                  self.retrieveData(true);
-                }
-              } else if (data.isRunning) {
-                var progressPercentage = 90; // Adjust based on data.progress if available
-                listItem.find('.progress-row-bar').css('width', progressPercentage + '%');
-              }
-            }).fail(function(xhr, textStatus, errorThrown) {
-              if (xhr.status === 404 && retryCount < maxRetries) {
-                retryCount++;
-              } else {
-                clearInterval(interval);
-              }
-            });
-          }, 10000);
+        var totalTasks = taskIds.length;
+        var taskStatus = {}; // Store the status of each task
+        var pollingInterval = 10000;
+        // Initialize taskStatus for each task
+        taskIds.forEach(function(task_id) {
+          taskStatus[task_id] = 'pending';
         });
+                
+        var doPoll = function() {
+          taskIds.forEach(function(task_id, index) {
+            if (taskStatus[task_id] === 'pending') { // Only poll if the task is still pending
+              $.get('/desktop/api2/check_upload_status/' + task_id, function(data) {
+                var listItem = listItems[index];
+                if (data.isFinalized || data.isFailure || data.is_revoked) {
+                  completedUploads++; // Increment the count of completed uploads
+                  taskStatus[task_id] = data.isFinalized ? 'finalized' : 'failed'; // Update task status
+
+                  if (data.isFinalized) {
+                    listItem.find('.progress-row-bar').css('width', '100%');
+                    listItem.find('.progress-row-text').text('Upload complete.');
+                  } else if (data.isFailure) {
+                    listItem.find('.progress-row-bar').css('width', '100%');
+                    listItem.find('.progress-row-text').text('Upload failed.');
+                    $(document).trigger('error', "${ _('File upload failed. Please check the logs for task id: ') }" + task_id)
+                  }
+
+                  if (completedUploads >= totalTasks) {
+                    $('#uploadFileModal').modal('hide'); // Close the modal when all uploads are completed
+                    self.retrieveData(true);
+                  }
+                } else if (data.isRunning) {
+                    var progressPercentage = 90; // Adjust based on data.progress if available
+                    listItem.find('.progress-row-bar').css('width', progressPercentage + '%');
+                  }
+                }).fail(function(xhr, textStatus, errorThrown) {
+                  if (xhr.status === 404) {
+                    setTimeout(doPoll, 10000); // Retry after 10 seconds
+                  }
+              });
+            }
+          });
+          if (completedUploads < totalTasks) {
+            setTimeout(doPoll, pollingInterval); // Schedule the next poll if not all tasks are completed
+          }
+        };
+        doPoll();
       }
 
-      self.uploadFile = (function (scheduleUpload) {  
+      self.uploadFile = (function () {  
           var uploader; 
-          var scheduleUpload = false;
+          var scheduleUpload;
           
           if ((window.getLastKnownConfig().hue_config.enable_chunked_file_uploader) && (window.getLastKnownConfig().hue_config.enable_task_server))  {
             
@@ -2157,7 +2171,7 @@ else:
                         $('#uploadFileModal').modal('hide');
                         $(document).trigger('info', "File upload scheduled. Please check the task server page for progress.")
                       }
-                      pollForRealProgress(self.taskIds, self.listItems, self.pendingUploads())
+                      pollForTaskProgress(self.taskIds, self.listItems, self.pendingUploads())
                       self.filesToHighlight.push(response.path);                       
                     }
                     if (self.pendingUploads() === 0) {                    
@@ -2165,10 +2179,6 @@ else:
                       self.listItems=[];
                       self.retrieveData(true);
                     }
-                  },
-
-                  onAllComplete: function(succeeded, failed){
-                    ##$('#uploadFileModal').modal('hide');
                   },
                   onSubmit: function (id, fileName, responseJSON) {
                       var deferred = new qq.Promise(); // Create a promise to defer the upload

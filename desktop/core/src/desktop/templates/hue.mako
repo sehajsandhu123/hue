@@ -240,7 +240,6 @@ ${ hueIcons.symbols() }
         <div id="embeddable_useradmin_editpermission" class="embeddable"></div>
         <div id="embeddable_useradmin_configurations" class="embeddable"></div>
         <div id="embeddable_useradmin_newuser" class="embeddable"></div>
-        <div id="embeddable_useradmin_document_cleanup" class="embeddable"></div>
         <div id="embeddable_useradmin_addldapusers" class="embeddable"></div>
         <div id="embeddable_useradmin_addldapgroups" class="embeddable"></div>
         <div id="embeddable_useradmin_edituser" class="embeddable"></div>
