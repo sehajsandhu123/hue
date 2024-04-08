@@ -118,7 +118,7 @@ function start_celery() {
   chmod 644 $HUE_HOME/celerybeat-schedule
   $HUE_BIN/hue runcelery worker --app desktop.celery --loglevel=DEBUG --schedule_file $HUE_HOME/celerybeat-schedule
   # Start Redis server
-  redis-server --port 6379
+  redis-server --port 6379 --daemonize no
 }
 
 
