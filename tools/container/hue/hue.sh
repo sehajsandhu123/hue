@@ -117,7 +117,10 @@ function start_celery() {
   touch $HUE_HOME/celerybeat-schedule
   chmod 644 $HUE_HOME/celerybeat-schedule
   $HUE_BIN/hue runcelery worker --app desktop.celery --loglevel=DEBUG --schedule_file $HUE_HOME/celerybeat-schedule
-  # Start Redis server
+}
+
+function start_redis() {
+  echo "Starting Redis server..."
   redis-server --port 6379 --daemonize no
 }
 
@@ -146,8 +149,16 @@ elif [[ $1 == rungunicornserver ]]; then
   fix_column_issue "axes_accessattempt" "trusted"
   $HUE_BIN/hue rungunicornserver
 elif [[ $1 == start_celery ]]; then
-  if grep -q '^\[\[task_server\]\]' $HUE_CONF_DIR/zhue_safety_valve.ini && grep -q '^enabled=True' $HUE_CONF_DIR/zhue_safety_valve.ini; then
+  if awk '/^\[\[task_server\]\]/{flag=1;next}/^\[/{flag=0}flag && /enabled=True/{print "Task server enabled"; exit}' $HUE_CONF_DIR/zhue_safety_valve.ini || \
+     awk '/^\[\[task_server\]\]/{flag=1;next}/^\[/{flag=0}flag && /enabled=True/{print "Task server enabled"; exit}' $HUE_CONF_DIR/zhue.ini || \
+     awk '/^\[\[task_server\]\]/{flag=1;next}/^\[/{flag=0}flag && /enabled=True/{print "Task server enabled"; exit}' $HUE_CONF_DIR/hue.ini; then
     start_celery
+  fi
+elif [[ $1 == start_redis ]]; then
+  if awk '/^\[\[task_server\]\]/{flag=1;next}/^\[/{flag=0}flag && /enabled=True/{print "Task server enabled"; exit}' $HUE_CONF_DIR/zhue_safety_valve.ini || \
+     awk '/^\[\[task_server\]\]/{flag=1;next}/^\[/{flag=0}flag && /enabled=True/{print "Task server enabled"; exit}' $HUE_CONF_DIR/zhue.ini || \
+     awk '/^\[\[task_server\]\]/{flag=1;next}/^\[/{flag=0}flag && /enabled=True/{print "Task server enabled"; exit}' $HUE_CONF_DIR/hue.ini; then
+    start_redis
   fi
 fi
 

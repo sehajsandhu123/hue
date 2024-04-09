@@ -57,6 +57,7 @@ ADD supervisor-files/hue_server.conf /etc/supervisor.d/
 ADD supervisor-files/hue_ktrenewer.conf /etc/supervisor.d/
 ADD supervisor-files/hue_loglistener.conf /etc/supervisor.d/
 ADD supervisor-files/hue_celery.conf /etc/supervisor.d/
+ADD supervisor-files/hue_redis.conf /etc/supervisor.d/
 RUN chown -R ${HUEUSER}:${HUEUSER} /etc/supervisord.conf && chown -R ${HUEUSER}:${HUEUSER} /etc/supervisor.d
 
 # Remove chardet package
