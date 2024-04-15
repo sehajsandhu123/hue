@@ -94,7 +94,7 @@ class S3FineUploaderChunkedUpload(object):
                             {'name': self.file_name, 'qquuid': self.qquuid, 'size': self.totalfilesize})
 
   def upload_chunks(self):
-    if TASK_SERVER.ENABLED.get():
+    if hasattr(TASK_SERVER, 'ENABLED') and TASK_SERVER.ENABLED.get():
       try:
         self._mp = self._bucket.initiate_multipart_upload(self.filepath)
       except (S3FileUploadError, S3FileSystemException) as e:

@@ -1482,7 +1482,7 @@ def perform_upload_task(request, *args, **kwargs):
   upload_class = UPLOAD_CLASSES.get(scheme, LocalFineUploaderChunkedUpload)
   result = None
 
-  if TASK_SERVER.ENABLED.get():
+  if hasattr(TASK_SERVER, 'get') and TASK_SERVER.ENABLED.get():
     # If task server is enabled, upload the file to the task server.
     print("Uploading file to task server")
     _fs = upload_class(request, **kwargs)

@@ -64,11 +64,10 @@ def upload_file_task(**kwargs):
   kwargs["state"] = "STARTED"
   now = timezone.now()
   kwargs["task_start"]=now.strftime("%Y-%m-%dT%H:%M:%S")
-  # kwargs["task_start"] = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
   upload_file_task.update_state(task_id=task_id, state='STARTED', meta=kwargs)
   try:
     from filebrowser.views import UPLOAD_CLASSES
-    upload_class = UPLOAD_CLASSES.get(kwargs["scheme"], None)
+    upload_class = UPLOAD_CLASSES.get(kwargs["scheme"])
     _fs = upload_class(request, args=[], **kwargs)
     kwargs["state"] = "RUNNING"
     upload_file_task.update_state(task_id=task_id, state='RUNNING', meta=kwargs)
@@ -82,7 +81,7 @@ def upload_file_task(**kwargs):
   kwargs["started"] = now.strftime("%Y-%m-%dT%H:%M:%S")
   kwargs["task_end"] = now.strftime("%Y-%m-%dT%H:%M:%S")
   upload_file_task.update_state(task_id=task_id, state='SUCCESS', meta=kwargs)
-  return
+  return None
   
 def _get_request(postdict=None, user_id=None, scheme=None):
   request = HttpRequest()
@@ -126,7 +125,7 @@ def document_cleanup_task( **kwargs):
     kwargs["task_end"] = now.strftime("%Y-%m-%dT%H:%M:%S")
     document_cleanup_task.update_state(task_id=task_id, state='SUCCESS', meta=kwargs)
 
-    return
+    return None
 
 import os
 import shutil

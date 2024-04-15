@@ -27,6 +27,7 @@ from celery.schedules import crontab
 from desktop.conf import TASK_SERVER
 from desktop.settings import TIME_ZONE, INSTALLED_APPS, CELERY_RESULT_BACKEND, CELERY_BROKER_URL
 
+from django.utils import timezone
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'desktop.settings')
@@ -39,7 +40,6 @@ class MyCelery(Celery):
 
     # Method to configure the beat_schedule
     def setup_beat_schedule(self):
-        from django.utils import timezone
         now = timezone.now()
 
         self.conf.beat_schedule = {
