@@ -15,28 +15,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from builtins import next, filter, map, object
-import logging
-import json
 import re
 import sys
-
+import json
+import logging
+from builtins import filter, map, next, object
 from operator import itemgetter
 
 from TCLIService import TCLIService
-from TCLIService.ttypes import TOpenSessionReq, TGetTablesReq, TFetchResultsReq, TStatusCode, TGetResultSetMetadataReq, \
-  TGetColumnsReq, TTypeId, TExecuteStatementReq, TGetOperationStatusReq, TFetchOrientation, \
-  TCloseSessionReq, TGetSchemasReq, TGetLogReq, TCancelOperationReq, TCloseOperationReq, TFetchResultsResp, TRowSet, TGetFunctionsReq, \
-  TGetCrossReferenceReq, TGetPrimaryKeysReq
-
-from desktop.lib import python_util, thrift_util
-from desktop.conf import DEFAULT_USER, USE_THRIFT_HTTP_JWT, ENABLE_XFF_FOR_HIVE_IMPALA, ENABLE_X_CSRF_TOKEN_FOR_HIVE_IMPALA
+from TCLIService.ttypes import (
+  TCancelOperationReq,
+  TCloseOperationReq,
+  TCloseSessionReq,
+  TExecuteStatementReq,
+  TFetchOrientation,
+  TFetchResultsReq,
+  TFetchResultsResp,
+  TGetColumnsReq,
+  TGetCrossReferenceReq,
+  TGetFunctionsReq,
+  TGetLogReq,
+  TGetOperationStatusReq,
+  TGetPrimaryKeysReq,
+  TGetResultSetMetadataReq,
+  TGetSchemasReq,
+  TGetTablesReq,
+  TOpenSessionReq,
+  TRowSet,
+  TStatusCode,
+  TTypeId,
+)
 
 from beeswax import conf as beeswax_conf, hive_site
-from beeswax.hive_site import hiveserver2_use_ssl
 from beeswax.conf import CONFIG_WHITELIST, LIST_PARTITIONS_LIMIT, MAX_CATALOG_SQL_ENTRIES
-from beeswax.models import Session, HiveServerQueryHandle, HiveServerQueryHistory
-from beeswax.server.dbms import Table, DataTable, QueryServerException, InvalidSessionQueryServerException, reset_ha
+from beeswax.hive_site import hiveserver2_use_ssl
+from beeswax.models import HiveServerQueryHandle, HiveServerQueryHistory, Session
+from beeswax.server.dbms import DataTable, InvalidSessionQueryServerException, QueryServerException, Table, reset_ha
+from desktop.conf import DEFAULT_USER, ENABLE_X_CSRF_TOKEN_FOR_HIVE_IMPALA, ENABLE_XFF_FOR_HIVE_IMPALA, USE_THRIFT_HTTP_JWT
+from desktop.lib import python_util, thrift_util
 from notebook.connectors.base import get_interpreter
 
 if sys.version_info[0] > 2:
@@ -1095,18 +1111,18 @@ class HiveServerClient(object):
 
     return '\n'.join(lines)
 
-  def get_operation_status(self, operation_handle):
+  def get_operation_status(self, operation_handle, session=None):
     req = TGetOperationStatusReq(operationHandle=operation_handle)
-    (res, session) = self.call(self._client.GetOperationStatus, req)
+    (res, session) = self.call(self._client.GetOperationStatus, req, session=session)
     return res
 
-  def get_log(self, operation_handle):
+  def get_log(self, operation_handle, session=None):
     try:
       req = TGetLogReq(operationHandle=operation_handle)
-      (res, session) = self.call(self._client.GetLog, req)
+      (res, session) = self.call(self._client.GetLog, req, session=session)
       return res.log
     except Exception as e:
-      if 'Invalid query handle' in str(e):
+      if 'Invalid query handle' in str(e) or 'Invalid or unknown query handle' in str(e):
         message = 'Invalid query handle'
         LOG.error('%s: %s' % (message, e))
       else:
@@ -1428,9 +1444,9 @@ class HiveServerClientCompatible(object):
     res = self._client.get_operation_status(operationHandle)
     return HiveServerQueryHistory.STATE_MAP[res.operationState]
 
-  def get_operation_status(self, handle):
+  def get_operation_status(self, handle, session=None):
     operationHandle = handle.get_rpc_handle()
-    return self._client.get_operation_status(operationHandle)
+    return self._client.get_operation_status(operationHandle, session=session)
 
   def use(self, query, session=None):
     data = self._client.execute_query(query, session=session)
@@ -1474,11 +1490,11 @@ class HiveServerClientCompatible(object):
   def dump_config(self):
     return 'Does not exist in HS2'
 
-  def get_log(self, handle, start_over=True):
+  def get_log(self, handle, start_over=True, session=None):
     operationHandle = handle.get_rpc_handle()
 
     if beeswax_conf.USE_GET_LOG_API.get() or self.query_server.get('dialect') == 'impala':
-      return self._client.get_log(operationHandle)
+      return self._client.get_log(operationHandle, session=session)
     else:
       if start_over:
         orientation = TFetchOrientation.FETCH_FIRST
