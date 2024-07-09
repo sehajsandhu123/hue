@@ -16,22 +16,30 @@
 
 @import '../../components/styles/variables';
 
-.metrics-component.antd.cuix {
-  background-color: $fluidx-gray-100;
-  padding: 24px;
+.admin-header-actions.antd.cuix{
+  display: flex;
+  align-items: center;
 
-  .metrics-heading {
-    font-size: $font-size-base;
-    font-weight: 500;
-    color: $fluidx-gray-900;
+  .select-dropDown{
+    border: 1px solid $fluidx-gray-600;
+    border-radius: $border-radius-base;
+    background-color: $fluidx-white;
+    width: 25%;
+    height: 32px;
   }
 
-  .metrics-table {
-    th {
-      width: 30%;
-      background-color: $fluidx-gray-040;
-    }
+   .input-filter{
+    margin: $font-size-sm;
+    width: 25%;
 
-    margin-bottom: $font-size-base;
+    input {
+      box-shadow: none;
+      -webkit-box-shadow: none;
+    }
+  }
+
+  .config-file-address-value {
+    color: $fluidx-blue-600;
+    display: block;
   }
 }
