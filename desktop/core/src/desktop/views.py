@@ -654,7 +654,8 @@ def is_idle(request):
 def commonfooter_m(request, messages=None):
   return commonfooter(request, messages, True)
 
-def commonfooter(request, messages=None, is_mobile=False):
+
+def commonfooter(request, messages=None, is_mobile=False, csp_nonce=None):
   """
   Returns the rendered common footer
   """
@@ -666,9 +667,9 @@ def commonfooter(request, messages=None, is_mobile=False):
   template = 'common_footer.mako'
   if is_mobile:
     template = 'common_footer_m.mako'
-
   return django_mako.render_to_string(template, {
     'request': request,
+    'csp_nonce': csp_nonce,
     'messages': messages,
     'version': hue_version(),
     'collect_usage': collect_usage(),
