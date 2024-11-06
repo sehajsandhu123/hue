@@ -14,24 +14,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-@import '../../components/styles/variables';
-
-.metrics-component.antd.cuix {
-  background-color: $fluidx-gray-100;
-  padding: 24px;
-
-  .metrics-heading {
-    font-size: $font-size-base;
-    font-weight: 500;
-    color: $fluidx-gray-900;
-  }
-
-  .metrics-table {
-    th {
-      width: 30%;
-      background-color: $fluidx-gray-040;
-    }
-
-    margin-bottom: $font-size-base;
-  }
-}
+export const GET_CONFIG_API = '/desktop/api2/get_hue_config';
+export const DEFAULT_SELECTED_APP = 'desktop';
