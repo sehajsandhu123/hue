@@ -289,6 +289,13 @@ class TrinoApi(Api):
     return {'status': 0}
 
   def close_session(self, session):
+    catalogs = self._show_catalogs()
+    databases = []
+
+    for catalog in catalogs:
+      query_client = TrinoQuery(self.trino_request, 'SHOW SCHEMAS FROM ' + catalog)
+      response = query_client.execute()
+      databases += [f'{catalog}.{item}' for sublist in response.rows for item in sublist]
     # Avoid closing session on page refresh or editor close for now
     pass
 
